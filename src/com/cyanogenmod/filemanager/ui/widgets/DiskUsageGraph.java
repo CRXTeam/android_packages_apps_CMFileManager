@@ -162,6 +162,7 @@ public class DiskUsageGraph extends View {
          * {@inheritDoc}
          */
         @Override
+        @SuppressWarnings("null")
         public void run() {
             //Get information about the drawing zone, and adjust the size
             Rect rect = new Rect();

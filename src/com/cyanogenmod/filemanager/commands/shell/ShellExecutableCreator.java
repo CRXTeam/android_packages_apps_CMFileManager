@@ -21,7 +21,6 @@ import com.cyanogenmod.filemanager.commands.ChangeOwnerExecutable;
 import com.cyanogenmod.filemanager.commands.ChangePermissionsExecutable;
 import com.cyanogenmod.filemanager.commands.ChecksumExecutable;
 import com.cyanogenmod.filemanager.commands.CompressExecutable;
-import com.cyanogenmod.filemanager.commands.ConcurrentAsyncResultListener;
 import com.cyanogenmod.filemanager.commands.CopyExecutable;
 import com.cyanogenmod.filemanager.commands.CreateDirExecutable;
 import com.cyanogenmod.filemanager.commands.CreateFileExecutable;
@@ -223,7 +222,7 @@ public class ShellExecutableCreator implements ExecutableCreator {
      */
     @Override
     public FindExecutable createFindExecutable(
-            String directory, Query query, ConcurrentAsyncResultListener asyncResultListener)
+            String directory, Query query, AsyncResultListener asyncResultListener)
             throws CommandNotFoundException {
         try {
             return new FindCommand(directory, query, asyncResultListener);

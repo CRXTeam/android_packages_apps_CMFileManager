@@ -15,8 +15,6 @@
  */
 package com.cyanogenmod.filemanager.console;
 
-import android.content.Context;
-
 import com.cyanogenmod.filemanager.commands.AsyncResultExecutable;
 import com.cyanogenmod.filemanager.commands.Executable;
 import com.cyanogenmod.filemanager.commands.ExecutableFactory;
@@ -48,7 +46,7 @@ public abstract class Console
      *
      * @return boolean If the console has to trace
      */
-    public final boolean isTrace() {
+    public boolean isTrace() {
         return this.mTrace;
     }
 
@@ -113,7 +111,6 @@ public abstract class Console
     * Method for execute a command in the operating system layer.
     *
     * @param executable The executable command to be executed
-    * @param ctx The current context
     * @throws ConsoleAllocException If the console is not allocated
     * @throws InsufficientPermissionsException If an operation requires elevated permissions
     * @throws NoSuchFileOrDirectory If the file or directory was not found
@@ -121,14 +118,10 @@ public abstract class Console
     * @throws CommandNotFoundException If the executable program was not found
     * @throws ExecutionException If the operation returns a invalid exit code
     * @throws ReadOnlyFilesystemException If the operation writes in a read-only filesystem
-    * @throws CancelledOperationException If the operation was cancelled
-    * @throws AuthenticationFailedException If the operation failed because an
-    * authentication failure
- * @throws AuthenticationFailedException
     */
-   public abstract void execute(final Executable executable, final Context ctx)
+   public abstract void execute(final Executable executable)
            throws ConsoleAllocException, InsufficientPermissionsException, NoSuchFileOrDirectory,
            OperationTimeoutException, ExecutionException, CommandNotFoundException,
-           ReadOnlyFilesystemException, CancelledOperationException, AuthenticationFailedException;
+           ReadOnlyFilesystemException;
 
 }

@@ -29,8 +29,6 @@ import com.cyanogenmod.filemanager.FileManagerApplication;
 import com.cyanogenmod.filemanager.R;
 import com.cyanogenmod.filemanager.commands.SyncResultExecutable;
 import com.cyanogenmod.filemanager.commands.shell.InvalidCommandDefinitionException;
-import com.cyanogenmod.filemanager.console.AuthenticationFailedException;
-import com.cyanogenmod.filemanager.console.CancelledOperationException;
 import com.cyanogenmod.filemanager.console.CommandNotFoundException;
 import com.cyanogenmod.filemanager.console.ConsoleAllocException;
 import com.cyanogenmod.filemanager.console.ConsoleBuilder;
@@ -96,8 +94,7 @@ public final class ExceptionUtil {
                                                 OperationTimeoutException.class,
                                                 ExecutionException.class,
                                                 ParseException.class,
-                                                ActivityNotFoundException.class,
-                                                AuthenticationFailedException.class
+                                                ActivityNotFoundException.class
                                                       };
     private static final int[] KNOWN_EXCEPTIONS_IDS = {
                                                 R.string.msgs_file_not_found,
@@ -111,8 +108,7 @@ public final class ExceptionUtil {
                                                 R.string.msgs_operation_timeout,
                                                 R.string.msgs_operation_failure,
                                                 R.string.msgs_operation_failure,
-                                                R.string.msgs_not_registered_app,
-                                                0
+                                                R.string.msgs_not_registered_app
                                                      };
     private static final boolean[] KNOWN_EXCEPTIONS_TOAST = {
                                                             false,
@@ -126,8 +122,7 @@ public final class ExceptionUtil {
                                                             true,
                                                             true,
                                                             true,
-                                                            false,
-                                                            true
+                                                            false
                                                             };
 
     /**
@@ -186,11 +181,6 @@ public final class ExceptionUtil {
             final boolean quiet, final boolean askUser,
             final OnRelaunchCommandResult listener) {
 
-        // Is cancellable?
-        if (ex instanceof CancelledOperationException) {
-            return;
-        }
-
         //Get the appropriate message for the exception
         int msgResId = R.string.msgs_unknown;
         boolean toast = true;
@@ -226,18 +216,12 @@ public final class ExceptionUtil {
                 @Override
                 public void run() {
                     try {
-                        String msg = null;
-                        if (fMsgResId > 0) {
-                            msg = context.getString(fMsgResId);
-                        } else {
-                            msg = ex.getMessage();
-                        }
                         if (fToast) {
-                            DialogHelper.showToast(context, msg, Toast.LENGTH_SHORT);
+                            DialogHelper.showToast(context, fMsgResId, Toast.LENGTH_SHORT);
                         } else {
                             AlertDialog dialog =
                                     DialogHelper.createErrorDialog(
-                                            context, R.string.error_title, msg);
+                                            context, R.string.error_title, fMsgResId);
                             DialogHelper.delegateDialogShow(context, dialog);
                         }
                     } catch (Exception e) {

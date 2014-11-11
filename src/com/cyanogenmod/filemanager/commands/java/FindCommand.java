@@ -19,7 +19,6 @@ package com.cyanogenmod.filemanager.commands.java;
 import android.util.Log;
 
 import com.cyanogenmod.filemanager.commands.AsyncResultListener;
-import com.cyanogenmod.filemanager.commands.ConcurrentAsyncResultListener;
 import com.cyanogenmod.filemanager.commands.FindExecutable;
 import com.cyanogenmod.filemanager.console.ExecutionException;
 import com.cyanogenmod.filemanager.console.InsufficientPermissionsException;
@@ -41,7 +40,7 @@ public class FindCommand extends Program implements FindExecutable {
 
     private final String mDirectory;
     private final String[] mQueryRegExp;
-    private final ConcurrentAsyncResultListener mAsyncResultListener;
+    private final AsyncResultListener mAsyncResultListener;
 
     private boolean mCancelled;
     private boolean mEnded;
@@ -54,15 +53,11 @@ public class FindCommand extends Program implements FindExecutable {
      * @param query The terms to be searched
      * @param asyncResultListener The partial result listener
      */
-    public FindCommand(String directory, Query query,
-            ConcurrentAsyncResultListener asyncResultListener) {
+    public FindCommand(String directory, Query query, AsyncResultListener asyncResultListener) {
         super();
         this.mDirectory = directory;
         this.mQueryRegExp = createRegexp(directory, query);
         this.mAsyncResultListener = asyncResultListener;
-        if (mAsyncResultListener instanceof ConcurrentAsyncResultListener) {
-            ((ConcurrentAsyncResultListener) mAsyncResultListener).onRegister();
-        }
         this.mCancelled = false;
         this.mEnded = false;
     }
@@ -90,25 +85,27 @@ public class FindCommand extends Program implements FindExecutable {
             this.mAsyncResultListener.onAsyncStart();
         }
 
-        boolean ready = true;
         File f = new File(this.mDirectory);
         if (!f.exists()) {
             if (isTrace()) {
                 Log.v(TAG, "Result: FAIL. NoSuchFileOrDirectory"); //$NON-NLS-1$
             }
-            ready = false;
+            if (this.mAsyncResultListener != null) {
+                this.mAsyncResultListener.onException(new NoSuchFileOrDirectory(this.mDirectory));
+            }
         }
-        if (ready && !f.isDirectory()) {
+        if (!f.isDirectory()) {
             if (isTrace()) {
                 Log.v(TAG, "Result: FAIL. NoSuchFileOrDirectory"); //$NON-NLS-1$
             }
-            ready = false;
+            if (this.mAsyncResultListener != null) {
+                this.mAsyncResultListener.onException(
+                        new ExecutionException("path exists but it's not a folder")); //$NON-NLS-1$
+            }
         }
 
         // Find the data
-        if (ready) {
-            findRecursive(f);
-        }
+        findRecursive(f);
 
         if (this.mAsyncResultListener != null) {
             this.mAsyncResultListener.onAsyncEnd(this.mCancelled);
@@ -159,8 +156,7 @@ public class FindCommand extends Program implements FindExecutable {
                 // Check if the process was cancelled
                 try {
                     synchronized (this.mSync) {
-                        if (this.mCancelled  || this.mEnded || (mAsyncResultListener != null
-                                && mAsyncResultListener.isCancelled())) {
+                        if (this.mCancelled  || this.mEnded) {
                             this.mSync.notify();
                             break;
                         }

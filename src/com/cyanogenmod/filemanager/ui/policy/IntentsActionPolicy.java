@@ -32,11 +32,8 @@ import android.widget.Toast;
 
 import com.cyanogenmod.filemanager.R;
 import com.cyanogenmod.filemanager.activities.ShortcutActivity;
-import com.cyanogenmod.filemanager.console.secure.SecureConsole;
 import com.cyanogenmod.filemanager.model.FileSystemObject;
 import com.cyanogenmod.filemanager.model.RegularFile;
-import com.cyanogenmod.filemanager.providers.SecureResourceProvider;
-import com.cyanogenmod.filemanager.providers.SecureResourceProvider.AuthorizationResource;
 import com.cyanogenmod.filemanager.ui.dialogs.AssociationsDialog;
 import com.cyanogenmod.filemanager.util.DialogHelper;
 import com.cyanogenmod.filemanager.util.ExceptionUtil;
@@ -102,10 +99,11 @@ public final class IntentsActionPolicy extends ActionsPolicy {
 
             // Obtain the mime/type and passed it to intent
             String mime = MimeTypeHelper.getMimeType(ctx, fso);
+            File file = new File(fso.getFullPath());
             if (mime != null) {
-                intent.setDataAndType(getUriFromFile(ctx, fso), mime);
+                intent.setDataAndType(getUriFromFile(ctx, file), mime);
             } else {
-                intent.setData(getUriFromFile(ctx, fso));
+                intent.setData(getUriFromFile(ctx, file));
             }
 
             // Resolve the intent
@@ -142,7 +140,7 @@ public final class IntentsActionPolicy extends ActionsPolicy {
             intent.setAction(android.content.Intent.ACTION_SEND);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.setType(MimeTypeHelper.getMimeType(ctx, fso));
-            Uri uri = getUriFromFile(ctx, fso);
+            Uri uri = getUriFromFile(ctx, new File(fso.getFullPath()));
             intent.putExtra(Intent.EXTRA_STREAM, uri);
 
             // Resolve the intent
@@ -203,7 +201,7 @@ public final class IntentsActionPolicy extends ActionsPolicy {
                 lastMimeType = mimeType;
 
                 // Add the uri
-                uris.add(getUriFromFile(ctx, fso));
+                uris.add(getUriFromFile(ctx, new File(fso.getFullPath())));
             }
             if (sameMimeType) {
                 intent.setType(lastMimeType);
@@ -293,15 +291,6 @@ public final class IntentsActionPolicy extends ActionsPolicy {
                                 rie.activityInfo.packageName) == 0 &&
                             ri.activityInfo.name.compareTo(
                                     rie.activityInfo.name) == 0) {
-
-                            // Mark as internal
-                            if (ri.activityInfo.metaData == null) {
-                                ri.activityInfo.metaData = new Bundle();
-                                ri.activityInfo.metaData.putString(
-                                        EXTRA_INTERNAL_ACTION, ii.getAction());
-                                ri.activityInfo.metaData.putBoolean(
-                                        CATEGORY_INTERNAL_VIEWER, true);
-                            }
                             exists = true;
                             break;
                         }
@@ -474,8 +463,7 @@ public final class IntentsActionPolicy extends ActionsPolicy {
                         ri.activityInfo.applicationInfo.packageName,
                         ri.activityInfo.name),
                     request);
-        boolean isInternalEditor = isInternalEditor(ri);
-        if (isInternalEditor) {
+        if (isInternalEditor(ri)) {
             String a = Intent.ACTION_VIEW;
             if (ri.activityInfo.metaData != null) {
                 a = ri.activityInfo.metaData.getString(
@@ -488,44 +476,7 @@ public final class IntentsActionPolicy extends ActionsPolicy {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         }
-
-        // Grant access to resources if needed
-        grantSecureAccessIfNeeded(intent, ri);
-
         return intent;
-    }
-
-    /**
-     * Method that add grant access to secure resources if needed
-     *
-     * @param intent The intent to grant access
-     * @param ri The resolved info associated with the intent
-     */
-    public static final void grantSecureAccessIfNeeded(Intent intent, ResolveInfo ri) {
-        // If this intent will be serve by the SecureResourceProvider then this uri must
-        // be granted before we start it, only for external apps. The internal editor
-        // must receive an file scheme uri
-        Uri uri = intent.getData();
-        String authority = null;
-        if (uri != null) {
-            authority = uri.getAuthority();
-        } else if (intent.getExtras() != null) {
-            uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
-            authority = uri.getAuthority();
-        }
-        if (authority != null && authority.equals(SecureResourceProvider.AUTHORITY)) {
-            boolean isInternalEditor = isInternalEditor(ri);
-            if (isInternalEditor) {
-                // remove the authorization and change request to file scheme
-                AuthorizationResource auth = SecureResourceProvider.revertAuthorization(uri);
-                intent.setData(Uri.fromFile(new File(auth.mFile.getFullPath())));
-
-            } else {
-                // Grant access to the package
-                SecureResourceProvider.grantAuthorizationUri(uri,
-                        ri.activityInfo.applicationInfo.packageName);
-            }
-        }
     }
 
     /**
@@ -642,17 +593,7 @@ public final class IntentsActionPolicy extends ActionsPolicy {
      * @param ctx The current context
      * @param file The file to resolve
      */
-    private static Uri getUriFromFile(Context ctx, FileSystemObject fso) {
-        // If the passed object is secure file then we have to provide access with
-        // the internal resource provider
-        if (fso.isSecure() && SecureConsole.isVirtualStorageResource(fso.getFullPath())
-                && fso instanceof RegularFile) {
-            RegularFile file = (RegularFile) fso;
-            return SecureResourceProvider.createAuthorizationUri(file);
-        }
-
-        // Try to resolve media data or return a file uri
-        final File file = new File(fso.getFullPath());
+    private static Uri getUriFromFile(Context ctx, File file) {
         ContentResolver cr = ctx.getContentResolver();
         Uri uri = MediaHelper.fileToContentUri(cr, file);
         if (uri == null) {

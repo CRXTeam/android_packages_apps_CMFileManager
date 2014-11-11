@@ -43,7 +43,6 @@ import com.cyanogenmod.filemanager.R;
 import com.cyanogenmod.filemanager.commands.AsyncResultListener;
 import com.cyanogenmod.filemanager.commands.FolderUsageExecutable;
 import com.cyanogenmod.filemanager.console.ConsoleBuilder;
-import com.cyanogenmod.filemanager.console.VirtualMountPointConsole;
 import com.cyanogenmod.filemanager.model.AID;
 import com.cyanogenmod.filemanager.model.FileSystemObject;
 import com.cyanogenmod.filemanager.model.FolderUsage;
@@ -140,7 +139,6 @@ public class FsoPropertiesDialog
      * @hide
      */
     boolean mIgnoreCheckEvents;
-    private boolean mIsVirtual;
     private boolean mHasPrivileged;
     private final boolean mIsAdvancedMode;
 
@@ -337,14 +335,13 @@ public class FsoPropertiesDialog
         }
 
         // Check if permissions operations are allowed
-        mIsVirtual = VirtualMountPointConsole.isVirtualStorageResource(mFso.getFullPath());
         try {
             this.mHasPrivileged = ConsoleBuilder.getConsole(this.mContext).isPrivileged();
         } catch (Throwable ex) {/**NON BLOCK**/}
         this.mSpnOwner.setEnabled(this.mHasPrivileged);
         this.mSpnGroup.setEnabled(this.mHasPrivileged);
         // Not allowed for symlinks
-        if (!mIsVirtual && !(this.mFso instanceof Symlink)) {
+        if (!(this.mFso instanceof Symlink)) {
             setCheckBoxesPermissionsEnable(this.mChkUserPermission, this.mHasPrivileged);
             setCheckBoxesPermissionsEnable(this.mChkGroupPermission, this.mHasPrivileged);
             setCheckBoxesPermissionsEnable(this.mChkOthersPermission, this.mHasPrivileged);
@@ -353,7 +350,7 @@ public class FsoPropertiesDialog
             setCheckBoxesPermissionsEnable(this.mChkGroupPermission, false);
             setCheckBoxesPermissionsEnable(this.mChkOthersPermission, false);
         }
-        if (!mIsVirtual && !this.mHasPrivileged && this.mIsAdvancedMode) {
+        if (!this.mHasPrivileged && this.mIsAdvancedMode) {
             this.mInfoMsgView.setVisibility(View.VISIBLE);
             this.mInfoMsgView.setOnClickListener(this);
         }
@@ -526,8 +523,7 @@ public class FsoPropertiesDialog
                     adjustSpinnerSize(this.mSpnGroup);
                 }
                 this.mInfoMsgView.setVisibility(
-                        mIsVirtual || this.mHasPrivileged || !this.mIsAdvancedMode
-                        ? View.GONE : View.VISIBLE);
+                        this.mHasPrivileged || !this.mIsAdvancedMode ? View.GONE : View.VISIBLE);
                 break;
 
             case R.id.fso_info_msg:
@@ -1032,7 +1028,7 @@ public class FsoPropertiesDialog
     void setMsg(String msg) {
         this.mInfoMsgView.setText(msg);
         this.mInfoMsgView.setVisibility(
-                mIsVirtual || !this.mIsAdvancedMode || (this.mHasPrivileged && msg == null) ?
+                !this.mIsAdvancedMode || (this.mHasPrivileged && msg == null) ?
                         View.GONE :
                         View.VISIBLE);
     }

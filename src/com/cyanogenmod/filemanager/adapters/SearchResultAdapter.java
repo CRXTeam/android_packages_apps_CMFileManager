@@ -80,6 +80,8 @@ public class SearchResultAdapter extends ArrayAdapter<SearchResult> {
         Float mRelevance;
     }
 
+    private static final int MESSAGE_REDRAW = 1;
+
     private DataHolder[] mData;
     private IconHolder mIconHolder;
     private final int mItemViewResourceId;
